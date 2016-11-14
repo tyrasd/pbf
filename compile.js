@@ -106,12 +106,6 @@ function getType(ctx, field) {
 }
 
 function compileFieldRead(ctx, field) {
-    var type = getType(ctx, field);
-    if (type) {
-        if (type._proto.fields) return type._name + '.read(pbf, pbf.readVarint() + pbf.pos)';
-        if (type._proto.values) return 'pbf.readVarint()';
-        throw new Error('Unexpected type: ' + type._name);
-    }
 
     var prefix = 'pbf.read';
     var signed = field.type === 'int32' || field.type === 'int64' ? 'true' : '';
@@ -120,6 +114,13 @@ function compileFieldRead(ctx, field) {
     if (isPacked(field)) {
         prefix += 'Packed';
         suffix = '(obj.' + field.name + (signed ? ', ' + signed : '') + ')';
+    }
+
+    var type = getType(ctx, field);
+    if (type) {
+        if (type._proto.fields) return type._name + '.read(pbf, pbf.readVarint() + pbf.pos)';
+        if (type._proto.values) return prefix + 'Varint' + suffix; //return 'pbf.readVarint()';
+        throw new Error('Unexpected type: ' + type._name);
     }
 
     switch (field.type) {
@@ -254,7 +255,7 @@ function setPackedOption(ctx, field, syntax) {
     case 'fixed64':
     case 'sfixed32':
     case 'bool':     field.options.packed = 'true'; break;
-    default:         delete field.options.packed;
+    default:         //delete field.options.packed;
     }
 }
 
